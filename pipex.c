@@ -17,57 +17,29 @@
 
 int	main(int ac, char **av, char ** envp)
 {
-	if (ac != 3)
-		return printf("Usage: ./pipex file1 cmd1\n");
+	if (ac != 5)
+		return printf("Usage: ./pipex file1 cmd1 cmd2 file2\n");
 
 
-	char **PATHS;
+	char *bin_path = "/bin/bash";
 
-	char *file1;
-	// char *file2;
-	char **cmd1;
-	// char *cmd2;
-	int 	i;
+	char *file = ft_strjoin(av[1], " ");
+	char *cmd = ft_strjoin(file, av[2]);
+	char *leftpipe = ft_strjoin("< ", cmd);
+	free(file);
+	free(cmd);
 
-	file1 = av[1];
-	cmd1 = ft_split(av[2], ' ');
-	printf("< %s %s\n", file1, cmd1[0]);
-	// printf("cat %s | %s\n", file1, cmd1[0]);
+	file = ft_strjoin(av[3], " > ");
+	cmd = ft_strjoin(file, av[4]);
+	free(file);
 
-	while (*envp)
-	{
-		if (!ft_strncmp(*envp, "PATH", 4))
-		{
-			PATHS = ft_split(*envp + 5, ':');
-		}
-		envp++;
-	}
+	file = ft_strjoin(" | ", cmd);
+	free(cmd);
 
-	int j = 0;
-	while (PATHS[j])
-	{
-		char *cmd = ft_strjoin("/", cmd1[0]);
-		char *binpath = ft_strjoin(PATHS[j], cmd);
-		free(cmd);
-		free(PATHS[j]);
-		PATHS[j] = binpath;
-		if (!access(PATHS[j], X_OK))
-			break;
-		j++;
-	}
+	char *bashcmd = ft_strjoin(leftpipe, file);
+	free(leftpipe);
 
-	char *binaryPath = PATHS[j];
-  	execve(binaryPath, cmd1, envp);
-  	perror("");
-
-
-		i = 0;
-	while (PATHS[i])
-		free(PATHS[i++]);
-	free (PATHS);
-	
-	i = 0;
-	while (cmd1[i])
-		free(cmd1[i++]);
-	free(cmd1);
+	char *bashargs[] = { bin_path, "-c", bashcmd, NULL};
+	execve(bin_path, bashargs, envp);
+	perror("");
 }
