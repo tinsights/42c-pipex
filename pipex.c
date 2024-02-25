@@ -15,7 +15,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include "libft.h"
+// #include "libft.h"
 
 
 int	main(int ac, char **av)
@@ -36,6 +36,9 @@ int	main(int ac, char **av)
 	if (pipe(p_fd) < 0)
 		return (-1);
 
+	// int fd = open("file2", O_RDWR | O_CREAT, 0777);
+	// dup2(fd, p_fd[0]);
+
 	int pid = fork();
 	if (pid  == -1)
 		return (-2);
@@ -54,6 +57,7 @@ int	main(int ac, char **av)
 
 		close(p_fd[0]); // we are never reading
 		dup2(p_fd[1], STDOUT_FILENO);
+		sleep(3);
 		execlp("tr" ,"tr", "-d", "l", NULL);
 		close(p_fd[1]);
 	}
@@ -62,11 +66,20 @@ int	main(int ac, char **av)
 		// parent process
 		close(p_fd[1]); // we are never writing
 		write(1, "parent\n", 8);
-		dup2(p_fd[0], STDIN_FILENO);
-		close(p_fd[0]);
-		wait(NULL);
-		execlp("cat" ,"cat", NULL);
 
+		// dup2(p_fd[0], STDIN_FILENO);
+		// close(p_fd[0]);
+		char c;
+		int nb = read(p_fd[0], &c, 1);
+		write(1, &nb, 4);
+		while (nb > 0)
+		{
+			write(1, &c, 1);
+			nb = read(p_fd[0], &c, 1);
+
+		}
+		wait(NULL);
+		
 	}
 	close(p_fd[1]);
 	close(p_fd[0]);
