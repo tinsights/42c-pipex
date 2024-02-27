@@ -11,72 +11,100 @@
 /* ************************************************************************** */
 
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <time.h>
-// #include "libft.h"
+#include "libft.h"
 
 
-int	main(int ac, char **av)
+int	main(int ac, char **av, char ** envp)
 {
-	if (ac != 3)
-		return printf("Usage: ./pipex file1 cmd1\n");
+	if (ac != 5)
+		return printf("Usage: ./pipex file1 cmd1 cmd2 file2\n");
 
-
-	// char **PATHS;
+	char **PATHS;
 
 	char *file1;
-	char *cmd1;
-	int		p_fd[2];
-	int		p2_fd[2];
-	time_t 	t;
+	char *file2;
+	char **cmd1;
+	char **cmd2;
 
 	file1 = av[1];
-	cmd1 = av[2];
+	file2 = av[4];
+	cmd1 = ft_split(av[2], ' ');
+	cmd2 = ft_split(av[3], ' ');
 
-	srand((unsigned) time(&t));
-	if (pipe(p_fd) < 0)
-		return (-1);
-	if (pipe(p2_fd) < 0)
-		return (-1);
+
+	char** PATHS2;
+	while (*envp)
+	{
+		if (!ft_strncmp(*envp, "PATH", 4))
+		{
+			PATHS = ft_split(*envp + 5, ':');
+			PATHS2 = ft_split(*envp + 5, ':');
+		}
+		envp++;
+	}
+
+	int p_fd[2];
+	pipe(p_fd); // error checking later
 
 	int pid = fork();
-	if (pid  == -1)
-		return (-2);
-
+	
 	if (pid == 0)
 	{
-		// child process
-		int i;
-		int recvd;
-
-		i = rand() % 42;
-		printf("child generated %i\n", i);
-
-		write(p_fd[1], &i, 4);
-		read(p_fd[0], &recvd, 4);
-		printf("child received %i\n", recvd);
-
+		int j = 0;
+		while (PATHS[j])
+		{
+			char *cmd = ft_strjoin("/", cmd1[0]);
+			char *binpath = ft_strjoin(PATHS[j], cmd);
+			free(cmd);
+			free(PATHS[j]);
+			PATHS[j] = binpath;
+			if (!access(PATHS[j], X_OK))
+				break;
+			j++;
+		}
+		if (PATHS[j] == NULL)
+			printf("%s: command not found\n", cmd1[0]);
+		close(p_fd[0]); // we are never reading
+		int fd = open(file1, O_RDWR | O_CREAT, 0777);
+		dup2(fd, STDIN_FILENO);
+		close(fd);
+		dup2(p_fd[1], STDOUT_FILENO);
+		close(p_fd[1]);
+		char *binaryPath = PATHS[j];
+		execve(binaryPath, cmd1, envp);
+		perror("");
 	}
 	else
-	{
-		// parent process
-		int i;
-		int recvd;
+	{	
+		close(p_fd[1]); // we are never writing
 
-		read(p_fd[0], &recvd, 4);
-		printf("parent received %i\n", recvd);
+		int j = 0;
+		while (PATHS2[j])
+		{
+			char *cmd = ft_strjoin("/", cmd2[0]);
+			char *binpath = ft_strjoin(PATHS2[j], cmd);
+			free(cmd);
+			free(PATHS2[j]);
 
-		i = rand() % recvd;
-		printf("parent generated %i\n", i);
+			PATHS2[j] = binpath;
+			if (!access(PATHS2[j], X_OK))
+				break;
+			j++;
+		}
+		if (PATHS2[j] == NULL)
+			printf("%s: command not found\n", cmd2[0]);
 
-		write(p2_fd[1], &i, 4);
+		dup2(p_fd[0], STDIN_FILENO);
+		if (!access(file2, X_OK))
+			unlink(file2);
+		int fd = open(file2, O_WRONLY | O_CREAT, 0777);
+		dup2(fd, STDOUT_FILENO);
+		char *binaryPath = PATHS2[j];
+		execve(binaryPath, cmd2, envp);
+		perror("");
 
-		
 	}
-	close(p_fd[1]);
-	close(p_fd[0]);
-
 }
