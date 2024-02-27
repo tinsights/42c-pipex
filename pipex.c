@@ -17,6 +17,10 @@
 #include <sys/wait.h>
 #include "libft.h"
 
+#ifndef BONUS
+# define BONUS 0
+#endif
+
 typedef struct s_params
 {
 	int		num_cmds;
@@ -139,7 +143,7 @@ int	main(int ac, char **av, char **envp)
 	int			fd[2];
 	t_params	params;
 
-	if (ac != 5)
+	if ((!BONUS && ac != 5) || (BONUS && ac < 5))
 	{
 		ft_putstr_fd("Usage: ./pipex file1 cmd1 cmd2 file2\n", STDERR_FILENO);
 		return (-1);

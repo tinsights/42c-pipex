@@ -1,4 +1,5 @@
 NAME = pipex
+BONUS_NAME = pipex_bonus
 
 CFLAGS = -Wall -Werror -Wextra
 LIBFLAGS = -Llibft -lft
@@ -10,10 +11,11 @@ LIBFT = $(LIBDIR)/libft.a
 SRCS = pipex.c \
 
 OBJS = $(SRCS:.c=.o)
+BONUS_OBJS= $(addprefix bonus_, $(SRCS:.c=.o))
 
 all: $(NAME)
 
-$(NAME): $(OBJS) $(LIBFT) $(MLX)
+$(NAME): $(OBJS) $(LIBFT)
 	cc $(CFLAGS) -g $(OBJS) $(LIBFLAGS) $(INC) -o $(NAME)
 
 $(OBJS): $(SRCS)
@@ -22,12 +24,21 @@ $(OBJS): $(SRCS)
 $(LIBFT):
 	make -C $(LIBDIR)
 
+bonus: $(BONUS_NAME)
+
+$(BONUS_NAME): $(BONUS_OBJS) $(LIBFT)
+	cc $(CFLAGS) -g $(BONUS_OBJS) $(LIBFLAGS) $(INC) -D BONUS=1 -o $(BONUS_NAME)
+
+$(BONUS_OBJS): bonus_%.o: %.c
+	$(CC) $(CFLAGS) $(INC) -D BONUS=1 -c $< -o $@
+
 clean:
 	rm -f $(OBJS)
 
 fclean: clean
 	$(MAKE) -C $(LIBDIR) fclean
 	rm -f $(NAME)
+	rm -f $(BONUS_NAME)
 
 re: fclean all
 
