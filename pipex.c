@@ -46,25 +46,35 @@ char	*check_valid_cmd(char **paths, char *cmd)
 	return (binpath);
 }
 
-void	run_child_process(char **paths, char ***cmds)
+void	run_child_command(int p_fd[2], char **paths, char **cmd)
 {
-	int		p_fd[2];
-	pipe(p_fd);
 	char	*binpath;
-	char	**cmd = cmds[0];
-	int		pid = fork();
 
-	if (pid == 0)
+	close(p_fd[0]);
+	binpath = check_valid_cmd(paths, cmd[0]);
+	if (!binpath)
 	{
-		close(p_fd[0]); // we are never reading
-		binpath = check_valid_cmd(paths, cmd[0]);
-		if (!binpath)
-			printf("%s: command not found\n", cmd[0]);
+		ft_putstr_fd(cmd[0], STDERR_FILENO);
+		ft_putstr_fd(": command not found\n", STDERR_FILENO);
+	}
+	else
+	{
 		dup2(p_fd[1], STDOUT_FILENO);
 		close(p_fd[1]);
 		execve(binpath, cmd, NULL);
 		perror("");
 	}
+}
+
+void	recurse_pipe(char **paths, char ***cmds)
+{
+	int		p_fd[2];
+	int		pid;
+
+	pipe(p_fd);
+	pid = fork();
+	if (pid == 0)
+		run_child_command(p_fd, paths, cmds[0]);
 	else
 	{
 		close(p_fd[1]);
@@ -72,7 +82,7 @@ void	run_child_process(char **paths, char ***cmds)
 		close(p_fd[0]);
 		wait(NULL);
 		if (*(++cmds))
-			run_child_process(paths, cmds);
+			recurse_pipe(paths, cmds);
 		else
 			return ;
 	}
@@ -80,13 +90,15 @@ void	run_child_process(char **paths, char ***cmds)
 
 void	free_memory(char ***cmds, char **paths)
 {
-	int i;
-	
+	int		i;
+	int		j;
+	char	**cmd;
+
 	i = 0;
 	while (cmds[i])
 	{
-		char **cmd = cmds[i];
-		int j = -1;
+		cmd = cmds[i];
+		j = -1;
 		while (cmd[++j])
 			free(cmd[j]);
 		free(cmd);
@@ -99,19 +111,16 @@ void	free_memory(char ***cmds, char **paths)
 	free(paths);
 }
 
-
-int init_data(int ac, char **av, t_params *params, char **envp)
+int	init_data(int ac, char **av, t_params *params, char **envp)
 {
-	int i;
+	int	i;
 
 	params->num_cmds = ac - 3;
 	params->cmds = ft_calloc(params->num_cmds + 1, sizeof(char *));
 	params->cmds[params->num_cmds] = NULL;
-
 	i = -1;
 	while (++i < params->num_cmds)
 		params->cmds[i] = ft_split(av[i + 2], ' ');
-
 	while (*envp)
 	{
 		if (!ft_strncmp(*envp, "PATH", 4))
@@ -124,21 +133,31 @@ int init_data(int ac, char **av, t_params *params, char **envp)
 	return (1);
 }
 
-int	main(int ac, char **av, char ** envp)
+int	main(int ac, char **av, char **envp)
 {
-	char c;
-	int fd;
-	t_params params;
+	char		c;
+	int			fd[2];
+	t_params	params;
 
-	if (ac < 5)
-		return printf("Usage: ./pipex file1 cmd1 cmd2 file2\n");
+	if (ac != 5)
+	{
+		ft_putstr_fd("Usage: ./pipex file1 cmd1 cmd2 file2\n", STDERR_FILENO);
+		return (-1);
+	}
 	init_data(ac, av, &params, envp);
-	int fd = open(av[1], O_RDWR | O_CREAT, 0777);
-	dup2(fd, STDIN_FILENO);
-	close(fd);
-	run_child_process(params.paths, params.cmds);
-	fd = open(av[ac - 1], O_WRONLY | O_TRUNC | O_CREAT, 0777);
-	while(read(STDIN_FILENO, &c, 1))
-		write(fd, &c, 1);
+	fd[0] = open(av[1], O_RDONLY, 0777);
+	fd[1] = open(av[ac - 1], O_WRONLY | O_TRUNC | O_CREAT, 0777);
+	if (fd[0] < 0)
+		perror(av[1]);
+	if (fd[1] < 0)
+		perror(av[ac - 1]);
+	if (fd[0] >= 0 && fd[1] >= 0)
+	{
+		dup2(fd[0], STDIN_FILENO);
+		close(fd[0]);
+		recurse_pipe(params.paths, params.cmds);
+		while (read(STDIN_FILENO, &c, 1))
+			write(fd[1], &c, 1);
+	}
 	free_memory(params.cmds, params.paths);
 }
