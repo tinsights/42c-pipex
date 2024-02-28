@@ -10,41 +10,34 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <sys/wait.h>
-#include "libft.h"
-
-#ifndef BONUS
-# define BONUS 0
-#endif
+#include "pipex.h"
 
 typedef struct s_params
 {
 	int		num_cmds;
 	char	**paths;
 	char	***cmds;
+	int		fd[3];
+
 }	t_params;
 
-char	*check_valid_cmd(char **paths, char *cmd)
+char *check_valid_cmd(char **paths, char *cmd)
 {
 	int		j;
-	char	*binpath;
 	char	*cmdpath;
+	char	*binpath;
 
+	cmdpath = ft_strjoin("/", cmd);
 	j = 0;
 	while (paths[j])
 	{
-		cmdpath = ft_strjoin("/", cmd);
 		binpath = ft_strjoin(paths[j], cmdpath);
-		free(cmdpath);
 		if (!access(binpath, X_OK))
 			break ;
 		free(binpath);
 		j++;
 	}
+	free(cmdpath);
 	if (paths[j] == NULL)
 		return (NULL);
 	return (binpath);
@@ -67,6 +60,7 @@ void	run_child_command(int p_fd[2], char **paths, char **cmd)
 		close(p_fd[1]);
 		execve(binpath, cmd, NULL);
 		perror("");
+		free(binpath);
 	}
 }
 
@@ -84,7 +78,6 @@ void	recurse_pipe(char **paths, char ***cmds)
 		close(p_fd[1]);
 		dup2(p_fd[0], STDIN_FILENO);
 		close(p_fd[0]);
-		wait(NULL);
 		if (*(++cmds))
 			recurse_pipe(paths, cmds);
 		else
@@ -115,24 +108,32 @@ void	free_memory(char ***cmds, char **paths)
 	free(paths);
 }
 
-int	init_data(int ac, char **av, t_params *params, char **envp)
+int	init_data(int ac, char **av, t_params *p, char **envp)
 {
 	int	i;
 
-	params->num_cmds = ac - 3;
-	params->cmds = ft_calloc(params->num_cmds + 1, sizeof(char *));
-	params->cmds[params->num_cmds] = NULL;
-	i = -1;
-	while (++i < params->num_cmds)
-		params->cmds[i] = ft_split(av[i + 2], ' ');
-	while (*envp)
+	p->fd[0] = open(av[1], O_RDONLY);
+	if (p->fd[0] < 0)
 	{
-		if (!ft_strncmp(*envp, "PATH", 4))
-		{
-			params->paths = ft_split(*envp + 5, ':');
-			break ;
-		}
+		perror(av[1]);
+		p->fd[0] = open("/dev/null", O_RDONLY);
+		ac--;
+		av++;
+	}
+	p->fd[1] = open(av[ac - 1], O_WRONLY | O_TRUNC | O_CREAT, 0777);
+	p->num_cmds = ac - 3;
+	p->cmds = (char ***) ft_calloc(p->num_cmds + 1, sizeof(char **));
+	p->cmds[p->num_cmds] = NULL;
+	i = -1;
+	while (++i < p->num_cmds)
+		separate_quotes(av[i + 2], &(p->cmds[i]));
+	while (*envp && ft_strncmp(*envp, "PATH", 4))
 		envp++;
+	p->paths = ft_split(*envp + 5, ':');
+	if (p->fd[1] < 0)
+	{
+		perror(av[ac - 1]);
+		return (0);
 	}
 	return (1);
 }
@@ -140,7 +141,6 @@ int	init_data(int ac, char **av, t_params *params, char **envp)
 int	main(int ac, char **av, char **envp)
 {
 	char		c;
-	int			fd[2];
 	t_params	params;
 
 	if ((!BONUS && ac != 5) || (BONUS && ac < 5))
@@ -148,20 +148,13 @@ int	main(int ac, char **av, char **envp)
 		ft_putstr_fd("Usage: ./pipex file1 cmd1 cmd2 file2\n", STDERR_FILENO);
 		return (-1);
 	}
-	init_data(ac, av, &params, envp);
-	fd[0] = open(av[1], O_RDONLY, 0777);
-	fd[1] = open(av[ac - 1], O_WRONLY | O_TRUNC | O_CREAT, 0777);
-	if (fd[0] < 0)
-		perror(av[1]);
-	if (fd[1] < 0)
-		perror(av[ac - 1]);
-	if (fd[0] >= 0 && fd[1] >= 0)
+	if (init_data(ac, av, &params, envp))
 	{
-		dup2(fd[0], STDIN_FILENO);
-		close(fd[0]);
+		dup2(params.fd[0], STDIN_FILENO);
+		close(params.fd[0]);
 		recurse_pipe(params.paths, params.cmds);
 		while (read(STDIN_FILENO, &c, 1))
-			write(fd[1], &c, 1);
+			write(params.fd[1], &c, 1);
 	}
 	free_memory(params.cmds, params.paths);
 }

@@ -9,6 +9,7 @@ LIBDIR = libft/
 LIBFT = $(LIBDIR)/libft.a
 
 SRCS = pipex.c \
+		input.c
 
 OBJS = $(SRCS:.c=.o)
 BONUS_OBJS= $(addprefix bonus_, $(SRCS:.c=.o))
