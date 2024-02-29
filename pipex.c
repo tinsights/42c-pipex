@@ -38,7 +38,6 @@ void	run_child_command(int p_fd[2], char **paths, char **cmd)
 {
 	char	*binpath;
 
-	close(p_fd[0]);
 	if (cmd && cmd[0] && paths)
 		binpath = check_valid_cmd(paths, cmd[0]);
 	else
@@ -47,6 +46,9 @@ void	run_child_command(int p_fd[2], char **paths, char **cmd)
 	{
 		ft_putstr_fd(cmd[0], STDERR_FILENO);
 		ft_putstr_fd(": command not found\n", STDERR_FILENO);
+		close(p_fd[1]);
+		dup2(p_fd[0], STDIN_FILENO);
+		close(p_fd[0]);
 	}
 	else
 	{
@@ -73,9 +75,9 @@ void	recurse_pipe(char **paths, char ***cmds)
 		close(p_fd[1]);
 		dup2(p_fd[0], STDIN_FILENO);
 		close(p_fd[0]);
-		if (*cmds && *(++cmds))
+		if (*(++cmds))
 			recurse_pipe(paths, cmds);
-		waitpid(pid, NULL, WNOHANG);
+		waitpid(pid, NULL, 0);
 	}
 }
 
