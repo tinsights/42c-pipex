@@ -29,7 +29,7 @@ char *check_valid_cmd(char **paths, char *cmd)
 
 	cmdpath = ft_strjoin("/", cmd);
 	j = 0;
-	while (paths[j])
+	while (paths && paths[j])
 	{
 		binpath = ft_strjoin(paths[j], cmdpath);
 		if (!access(binpath, X_OK))
@@ -123,13 +123,15 @@ int	init_data(int ac, char **av, t_params *p, char **envp)
 	p->fd[1] = open(av[ac - 1], O_WRONLY | O_TRUNC | O_CREAT, 0644);
 	p->num_cmds = ac - 3;
 	p->cmds = (char ***) ft_calloc(p->num_cmds + 1, sizeof(char **));
-	p->cmds[p->num_cmds] = NULL;
 	i = -1;
 	while (++i < p->num_cmds)
 		separate_quotes(av[i + 2], &(p->cmds[i]));
 	while (*envp && ft_strncmp(*envp, "PATH", 4))
 		envp++;
-	p->paths = ft_split(*envp + 5, ':');
+	if (*envp)
+		p->paths = ft_split(*envp + 5, ':');
+	else
+		p->paths = (char**) (ft_calloc(1, sizeof(char *)));
 	if (p->fd[1] < 0)
 	{
 		perror(av[ac - 1]);
