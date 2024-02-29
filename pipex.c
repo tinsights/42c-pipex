@@ -77,7 +77,7 @@ void	recurse_pipe(char **paths, char ***cmds)
 		close(p_fd[0]);
 		if (*(++cmds))
 			recurse_pipe(paths, cmds);
-		waitpid(pid, NULL, 0);
+		waitpid(pid, NULL, WNOHANG);
 	}
 }
 
