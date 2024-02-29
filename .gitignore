@@ -2,3 +2,7 @@
 *.a
 a.out
 pipex
+pipex_bonus
+infile_big
+outfile
+infile
