@@ -82,6 +82,7 @@ void	recurse_pipe(char **paths, char ***cmds)
 			recurse_pipe(paths, cmds);
 		else
 			return ;
+		wait(NULL);
 	}
 }
 
@@ -158,5 +159,6 @@ int	main(int ac, char **av, char **envp)
 		while (read(STDIN_FILENO, &c, 1))
 			write(params.fd[1], &c, 1);
 	}
+	close(params.fd[1]);
 	free_memory(params.cmds, params.paths);
 }
