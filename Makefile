@@ -36,6 +36,7 @@ $(BONUS_OBJS): bonus_%.o: %.c
 
 clean:
 	rm -f $(OBJS)
+	rm -f $(BONUS_OBJS)
 
 fclean: clean
 	$(MAKE) -C $(LIBDIR) fclean
