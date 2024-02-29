@@ -94,10 +94,11 @@ char	*get_next_line(int fd)
 	char		*result;
 	static char	*store;
 
-	if (fd < 0)
+	if (fd < 0 || !init(&store, &buff, &result))
+	{
+		free(store);
 		return (NULL);
-	if (!init(&store, &buff, &result))
-		return (NULL);
+	}
 	if (gnl_strlen(store) > 0)
 		gnl_concat_replace(&buff, store, BUFFER_SIZE);
 	while (gnl_strlen(store) > 0 || read(fd, buff, BUFFER_SIZE) > 0)
