@@ -33,10 +33,9 @@ typedef struct s_params
 
 }	t_params;
 
-void separate_quotes(char *arg, char ***argv);
-int	init_data(int ac, char **av, t_params *p, char **envp);
-int	init_heredoc(int ac, char **av, t_params *p, char **envp);
+void	separate_quotes(char *arg, char ***argv);
+int		init_data(int ac, char **av, t_params *p, char **envp);
+int		init_heredoc(int ac, char **av, t_params *p, char **envp);
 void	free_memory(char ***cmds, char **paths);
-
 
 #endif

@@ -49,24 +49,31 @@ void	add_to_argv(char ***argv, char *str)
 	(*argv)[num_strs + 1] = NULL;
 }
 
-void process_subquote()
+void	split_args_by_space(char ***argv, char *str)
 {
-	int qlen = 0;
-	int x;
-	char *cmd;
-	char *qarg;
-	char **args;
+	int		x;
+	char	**args;
+
+	x = 0;
+	args = ft_split(str, ' ');
+	while (args[x])
+		add_to_argv(argv, args[x++]);
+	free(args);
+}
+
+int	process_subquote(char *arg, char ***argv, char *qstart, char qchar)
+{
+	int		qlen;
+	char	*cmd;
+	char	*qarg;
 
 	if (qstart != arg)
 	{
 		cmd = ft_substr(arg, 0, qstart - arg);
-		args = ft_split(cmd, ' ');
+		split_args_by_space(argv, cmd);
 		free(cmd);
-		x = 0;
-		while (args[x])
-			add_to_argv(argv, args[x++]);
-		free(args);
 	}
+	qlen = 0;
 	while (qstart[qlen + 1] && qstart[qlen + 1] != qchar)
 		qlen++;
 	if (qlen)
@@ -75,58 +82,34 @@ void process_subquote()
 		add_to_argv(argv, qarg);
 		qarg[qlen] = 0;
 	}
-	if (j + qlen < ft_strlen(arg))
-		separate_quotes(arg + j + qlen + 2, argv);
+	return (qlen);
 }
 
 void	separate_quotes(char *arg, char ***argv)
 {
-	// int totallen = ft_strlen(arg);
-	char *qstart = NULL;
-	char qchar = 0;
-	int j = -1;
+	char	*qstart;
+	char	qchar;
+	int		j;
+	int		qlen;
+
+	j = -1;
+	qchar = 0;
+	qstart = NULL;
 	while (arg[++j])
 	{
 		if (arg[j] == '\'' || arg[j] == '"')
 		{
 			qstart = arg + j;
 			qchar = arg[j];
-			break;
+			break ;
 		}
 	}
 	if (qstart)
 	{
-		int qlen = 0;
-		char *cmd;
-		if (qstart != arg)
-		{
-			cmd = ft_substr(arg, 0, qstart - arg);
-			char **args = ft_split(cmd, ' ');
-			free(cmd);
-			int x = 0;
-			while (args[x])
-				add_to_argv(argv, args[x++]);
-			free(args);
-		}
-		char *qarg;
-		while (qstart[qlen + 1] && qstart[qlen + 1] != qchar)
-			qlen++;
-
-		if (qlen)
-		{
-			qarg = ft_substr(qstart, 1, qlen + 1);
-			add_to_argv(argv, qarg);
-			qarg[qlen] = 0;
-		}
+		qlen = process_subquote(arg, argv, qstart, qchar);
 		if (j + qlen < ft_strlen(arg))
 			separate_quotes(arg + j + qlen + 2, argv);
 	}
 	else
-	{
-		char **args = ft_split(arg, ' ');
-		int x = 0;
-		while (args[x])
-			add_to_argv(argv, args[x++]);
-		free(args);
-	}
+		split_args_by_space(argv, arg);
 }
