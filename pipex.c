@@ -114,24 +114,47 @@ void	free_memory(char ***cmds, char **paths)
 		free(paths);
 }
 
+
+void open_files(int *ac, char ***av, t_params *p)
+{
+	if (BONUS && !ft_strncmp((*av)[1], "here_doc", 9))
+	{
+		int p_fd[2];
+
+		p->fd[1] = open((*av)[(*ac) - 1], O_WRONLY | O_APPEND | O_CREAT, 0644);
+		if (p->fd[1] < 0)
+		{
+			perror((*av)[(*ac) - 1]);
+			(*ac)--;
+		}
+		pipe(p_fd);
+		p->fd[0] = p_fd[0];
+		p->fd[2] = p_fd[1];
+	}
+	else
+	{
+		p->fd[1] = open((*av)[*ac - 1], O_WRONLY | O_TRUNC | O_CREAT, 0644);
+		if (p->fd[1] < 0)
+		{
+			perror((*av)[*ac - 1]);
+			(*ac)--;
+		}
+		p->fd[0] = open((*av)[1], O_RDONLY);
+		if (p->fd[0] < 0)
+		{
+			perror((*av)[1]);
+			p->fd[0] = open("/dev/null", O_RDONLY);
+			(*ac)--;
+			(*av)++;
+		}	
+	}
+}
+
 int	init_data(int ac, char **av, t_params *p, char **envp)
 {
 	int	i;
 
-	p->fd[1] = open(av[ac - 1], O_WRONLY | O_TRUNC | O_CREAT, 0644);
-	if (p->fd[1] < 0)
-	{
-		perror(av[ac - 1]);
-		ac--;
-	}
-	p->fd[0] = open(av[1], O_RDONLY);
-	if (p->fd[0] < 0)
-	{
-		perror(av[1]);
-		p->fd[0] = open("/dev/null", O_RDONLY);
-		ac--;
-		av++;
-	}
+	open_files(&ac, &av, p);
 	p->num_cmds = ac - 3;
 	p->cmds = (char ***) ft_calloc(p->num_cmds + 1, sizeof(char **));
 	i = -1;
@@ -146,21 +169,12 @@ int	init_data(int ac, char **av, t_params *p, char **envp)
 	return (1);
 }
 
-int init_bonus(int ac, char **av, t_params *p, char **envp)
+int init_heredoc(int ac, char **av, t_params *p, char **envp)
 {
 	int	i;
-	int p_fd[2];
-
-	p->fd[1] = open(av[ac - 1], O_WRONLY | O_APPEND | O_CREAT, 0644);
-	if (p->fd[1] < 0)
-	{
-		perror(av[ac - 1]);
-		ac--;
-	}
-	pipe(p_fd);
-	p->fd[0] = p_fd[0];
-	p->fd[2] = p_fd[1];
+	
 	p->delim = av[2];
+	open_files(&ac, &av, p);
 	p->num_cmds = ac - 4;
 	p->cmds = (char ***) ft_calloc(p->num_cmds + 1, sizeof(char **));
 	i = -1;
@@ -177,7 +191,7 @@ int init_bonus(int ac, char **av, t_params *p, char **envp)
 
 void run_here_doc(int ac, char **av, char **envp, t_params *p)
 {
-	if (init_bonus(ac, av, p, envp))
+	if (init_heredoc(ac, av, p, envp))
 	{
 		int len = ft_strlen(p->delim);
 		char  *line = get_next_line(STDIN_FILENO);
