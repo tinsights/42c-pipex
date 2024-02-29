@@ -39,7 +39,7 @@ void	run_child_command(int p_fd[2], char **paths, char **cmd)
 	char	*binpath;
 
 	close(p_fd[0]);
-	if (cmd && cmd[0])
+	if (cmd && cmd[0] && paths)
 		binpath = check_valid_cmd(paths, cmd[0]);
 	else
 		binpath = NULL;
