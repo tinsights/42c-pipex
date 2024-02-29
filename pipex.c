@@ -120,7 +120,7 @@ int	init_data(int ac, char **av, t_params *p, char **envp)
 		ac--;
 		av++;
 	}
-	p->fd[1] = open(av[ac - 1], O_WRONLY | O_TRUNC | O_CREAT, 0777);
+	p->fd[1] = open(av[ac - 1], O_WRONLY | O_TRUNC | O_CREAT, 0644);
 	p->num_cmds = ac - 3;
 	p->cmds = (char ***) ft_calloc(p->num_cmds + 1, sizeof(char **));
 	p->cmds[p->num_cmds] = NULL;
