@@ -23,6 +23,20 @@
 #  define BONUS 0
 # endif
 
+typedef struct s_params
+{
+	int		num_cmds;
+	char	**paths;
+	char	***cmds;
+	char	*delim;
+	int		fd[3];
+
+}	t_params;
+
 void separate_quotes(char *arg, char ***argv);
+int	init_data(int ac, char **av, t_params *p, char **envp);
+int	init_heredoc(int ac, char **av, t_params *p, char **envp);
+void	free_memory(char ***cmds, char **paths);
+
 
 #endif
