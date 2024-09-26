@@ -1,7 +1,0 @@
-{
-	"files.associations": {
-		"*.tpp": "cpp",
-		"pipex.h": "c",
-		"libft.h": "c"
-	}
-}
