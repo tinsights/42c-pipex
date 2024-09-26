@@ -1,7 +1,7 @@
 NAME = pipex
 BONUS_NAME = pipex_bonus
 
-CFLAGS = -Wall -Werror -Wextra
+CFLAGS = -Wall -Werror -Wextra -g
 LIBFLAGS = -Llibft -lft
 INC = -Ilibft/includes
 

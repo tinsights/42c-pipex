@@ -51,13 +51,20 @@ void	add_to_argv(char ***argv, char *str)
 
 void	split_args_by_space(char ***argv, char *str)
 {
-	int		x;
+	int		word_count;
 	char	**args;
 
-	x = 0;
+	word_count = 0;
 	args = ft_split(str, ' ');
-	while (args[x])
-		add_to_argv(argv, args[x++]);
+	if (args && !args[0])
+	{
+		free(args);
+		args = ft_calloc(2, sizeof(char *));
+		args[0] = ft_strdup(str);
+		args[1] = NULL;
+	}
+	while (args[word_count])
+		add_to_argv(argv, args[word_count++]);
 	free(args);
 }
 
